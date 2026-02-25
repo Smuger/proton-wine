@@ -158,6 +158,7 @@ do
       "dlls_winex11_drv_bitblt_c.patch"
       "dlls_winex11_drv_desktop_c.patch"
       "dlls_winex11_drv_mouse_c.patch"
+      "dlls_winex11_drv_mouse_c_wm_input_fix.patch"
       "dlls_winex11_drv_window_c.patch"
       "dlls_winex11_drv_x11drv_main_c.patch"
 

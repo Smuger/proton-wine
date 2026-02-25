@@ -1,0 +1,44 @@
+diff --git a/dlls/winex11.drv/mouse.c b/dlls/winex11.drv/mouse.c
+index 2ba49607bd2..bb895d88875 100644
+--- a/dlls/winex11.drv/mouse.c
++++ b/dlls/winex11.drv/mouse.c
+@@ -141,6 +141,21 @@ MAKE_FUNCPTR(XISelectEvents);
+ #undef MAKE_FUNCPTR
+ #endif
+ 
++/* When XInput2 is available, explorer.exe centralises WM_INPUT generation via
++ * SEND_HWMSG_NO_MSG raw events, so game processes must suppress their own raw
++ * input dispatch to avoid duplicates (SEND_HWMSG_NO_RAW = legacy only).
++ * When XInput2 is absent (e.g. Android / --without-xinput2 builds) there is no
++ * explorer.exe raw input pipeline at all, so each process must generate WM_INPUT
++ * itself alongside the legacy message (flags = 0). */
++#ifdef HAVE_X11_EXTENSIONS_XINPUT2_H
++static inline UINT get_send_mouse_flags(void)
++{
++    return xinput2_available ? SEND_HWMSG_NO_RAW : 0;
++}
++#else
++static inline UINT get_send_mouse_flags(void) { return 0; }
++#endif
++
+ #ifdef HAVE_X11_EXTENSIONS_XINPUT_H
+ #define MAKE_FUNCPTR(f) static typeof(f) * p##f
+ MAKE_FUNCPTR(XOpenDevice);
+@@ -640,7 +655,7 @@ static void send_mouse_input( HWND hwnd, Window window, unsigned int state, INPU
+     {
+         struct x11drv_thread_data *thread_data = x11drv_thread_data();
+         if (!thread_data->clipping_cursor || thread_data->clip_window != window) return;
+-        NtUserSendHardwareInput( hwnd, SEND_HWMSG_NO_RAW, input, 0 );
++        NtUserSendHardwareInput( hwnd, get_send_mouse_flags(), input, 0 );
+         return;
+     }
+ 
+@@ -664,7 +679,7 @@ static void send_mouse_input( HWND hwnd, Window window, unsigned int state, INPU
+         SERVER_END_REQ;
+     }
+ 
+-    NtUserSendHardwareInput( hwnd, SEND_HWMSG_NO_RAW, input, 0 );
++    NtUserSendHardwareInput( hwnd, get_send_mouse_flags(), input, 0 );
+ }
+ 
+ #ifdef SONAME_LIBXCURSOR
